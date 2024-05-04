@@ -16,14 +16,14 @@ pub fn decode(input: &str) -> Result<String> {
         if c == '\\' {
             match chars.next() {
                 // Simple excape sequences
-                Some('n') => result.push('\n'),
                 Some('t') => result.push('\t'),
+                Some('n') => result.push('\n'),
                 Some('r') => result.push('\r'),
                 Some('0') => result.push('\0'),
                 Some('\\') => result.push('\\'),
                 Some('"') => result.push('"'),
                 Some('\'') => result.push('\''),
-                // 8 bit excape sequences
+                // 8 bit excape sequences \x02
                 Some('x') => {
                     let mut hex_chars = String::new();
                     while let Some(&c) = chars.peek() {
@@ -90,6 +90,10 @@ mod tests {
         cases.push((r"\t", "\t"));
         cases.push((r"\t\r\n", "\t\r\n"));
         cases.push((r"\t\r\n Hello \0", "\t\r\n Hello \0"));
+        cases.push((r"\\", "\\"));
+        cases.push((r#"\""#, "\""));
+        cases.push((r#"\'"#, "\'"));
+        cases.push((r"\0", "\0"));
 
         for case in cases {
             assert_eq!(decode(case.0).unwrap(), case.1)
