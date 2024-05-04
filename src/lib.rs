@@ -136,4 +136,17 @@ mod tests {
         let case = r"\u{21B5";
         assert!(decode(case).is_err());
     }
+
+    #[test]
+    fn test_unicode_codepoints() {
+        let valid_cases = vec!["\\u{1F600}", "\\u{10FFFF}"];
+        for case in valid_cases {
+            assert!(decode(case).is_ok());
+        }
+
+        let invalid_cases = vec!["\\u{110000}", "\\u{FFFFFF}"];
+        for case in invalid_cases {
+            assert!(decode(case).is_err());
+        }
+    }
 }
