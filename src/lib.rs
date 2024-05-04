@@ -1,3 +1,5 @@
+use std::u32;
+
 #[derive(Debug)]
 pub enum Error {
     InvalidEscape,
@@ -38,7 +40,36 @@ pub fn decode(input: &str) -> Result<String> {
                         return Err(Error::InvalidHexChar);
                     }
                 }
-                // TODO: unicode escape sequences
+                // unicde escape /u{1A2B}
+                Some('u') => {
+                    //
+                    match chars.next() {
+                        Some('{') => '{',
+                        _ => return Err(Error::InvalidUnicode),
+                    };
+                    let mut hex_chars = String::new();
+                    while let Some(&c) = chars.peek() {
+                        if c.is_ascii_hexdigit() {
+                            hex_chars.push(c);
+                            chars.next();
+                        } else {
+                            break;
+                        }
+                    }
+                    if let Ok(value) = u32::from_str_radix(&hex_chars, 16) {
+                        if let Some(c) = char::from_u32(value) {
+                            result.push(c);
+                        } else {
+                            return Err(Error::InvalidUnicode);
+                        }
+                    } else {
+                        return Err(Error::InvalidUnicode);
+                    }
+                    match chars.next() {
+                        Some('}') => '}',
+                        _ => return Err(Error::InvalidUnicode),
+                    };
+                }
                 _ => return Err(Error::InvalidEscape),
             }
         } else {
@@ -80,10 +111,14 @@ mod tests {
         assert!(decode(case).is_err());
     }
 
-    // #[test]
-    // fn test_unicode_sequence() {
-    //     let expected = "↵";
-    //     let case = r"\u{21B5}";
-    //     assert_eq!(expected, decode(case).unwrap());
-    // }
+    #[test]
+    fn test_unicode_sequence() {
+        let expected = "↵";
+        let case = r"\u{21B5}";
+        assert_eq!(expected, decode(case).unwrap());
+        let case = r"\u21B5}";
+        assert!(decode(case).is_err());
+        let case = r"\u{21B5";
+        assert!(decode(case).is_err());
+    }
 }
