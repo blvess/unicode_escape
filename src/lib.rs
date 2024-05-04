@@ -26,23 +26,21 @@ pub fn decode(input: &str) -> Result<String> {
                 // 8 bit excape sequences \x02
                 Some('x') => {
                     let mut hex_chars = String::new();
-                    while let Some(&c) = chars.peek() {
-                        if c.is_ascii_hexdigit() {
-                            hex_chars.push(c);
-                            chars.next();
-                        } else {
-                            break;
+                    for _ in 0..2 {
+                        if let Some(&c) = chars.peek() {
+                            if c.is_ascii_hexdigit() {
+                                hex_chars.push(c);
+                                chars.next();
+                            }
                         }
                     }
-                    if let Ok(value) = u8::from_str_radix(&hex_chars, 16) {
-                        result.push(value as char);
-                    } else {
-                        return Err(Error::InvalidHexChar);
-                    }
+                    match u8::from_str_radix(&hex_chars, 16) {
+                        Ok(value) => result.push(char::from(value)),
+                        Err(_) => return Err(Error::InvalidHexChar),
+                    };
                 }
                 // unicde escape /u{1A2B}
                 Some('u') => {
-                    //
                     match chars.next() {
                         Some('{') => '{',
                         _ => return Err(Error::InvalidUnicode),
@@ -110,8 +108,6 @@ mod tests {
     #[test]
     fn test_invalid_escape() {
         let case = r"\x02 \65480 LGM\r\n";
-        assert!(decode(case).is_err());
-        let case = r"\x02 \x65480 LGM\r\n";
         assert!(decode(case).is_err());
     }
 
