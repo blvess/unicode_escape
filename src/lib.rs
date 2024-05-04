@@ -27,11 +27,8 @@ pub fn decode(input: &str) -> Result<String> {
                 Some('x') => {
                     let mut hex_chars = String::new();
                     for _ in 0..2 {
-                        if let Some(&c) = chars.peek() {
-                            if c.is_ascii_hexdigit() {
-                                hex_chars.push(c);
-                                chars.next();
-                            }
+                        if let Some(c) = chars.next() {
+                            hex_chars.push(c);
                         }
                     }
                     match u8::from_str_radix(&hex_chars, 16) {
