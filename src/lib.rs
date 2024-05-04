@@ -1,14 +1,23 @@
+use std::error::Error;
+use std::fmt;
 use std::u32;
 
 #[derive(Debug)]
-pub enum Error {
+pub enum DecodeError {
     InvalidEscape,
     InvalidHexChar,
     InvalidUnicode,
 }
-pub type Result<T> = std::result::Result<T, Error>;
 
-pub fn decode(input: &str) -> Result<String> {
+impl fmt::Display for DecodeError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl Error for DecodeError {}
+
+pub fn decode(input: &str) -> Result<String, impl Error> {
     let mut result = String::new();
     let mut chars = input.chars().peekable();
 
@@ -33,14 +42,14 @@ pub fn decode(input: &str) -> Result<String> {
                     }
                     match u8::from_str_radix(&hex_chars, 16) {
                         Ok(value) => result.push(char::from(value)),
-                        Err(_) => return Err(Error::InvalidHexChar),
+                        Err(_) => return Err(DecodeError::InvalidHexChar),
                     };
                 }
                 // unicde escape /u{1A2B}
                 Some('u') => {
                     match chars.next() {
                         Some('{') => '{',
-                        _ => return Err(Error::InvalidUnicode),
+                        _ => return Err(DecodeError::InvalidUnicode),
                     };
                     let mut hex_chars = String::new();
                     while let Some(&c) = chars.peek() {
@@ -55,17 +64,17 @@ pub fn decode(input: &str) -> Result<String> {
                         if let Some(c) = char::from_u32(value) {
                             result.push(c);
                         } else {
-                            return Err(Error::InvalidUnicode);
+                            return Err(DecodeError::InvalidUnicode);
                         }
                     } else {
-                        return Err(Error::InvalidUnicode);
+                        return Err(DecodeError::InvalidUnicode);
                     }
                     match chars.next() {
                         Some('}') => '}',
-                        _ => return Err(Error::InvalidUnicode),
+                        _ => return Err(DecodeError::InvalidUnicode),
                     };
                 }
-                _ => return Err(Error::InvalidEscape),
+                _ => return Err(DecodeError::InvalidEscape),
             }
         } else {
             result.push(c);
