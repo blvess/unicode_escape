@@ -1,4 +1,12 @@
-pub fn decode(input: &str) -> Result<String, String> {
+#[derive(Debug)]
+pub enum Error {
+    InvalidEscape,
+    InvalidHexChar,
+    InvalidUnicode,
+}
+pub type Result<T> = std::result::Result<T, Error>;
+
+pub fn decode(input: &str) -> Result<String> {
     let mut result = String::new();
     let mut chars = input.chars().peekable();
 
@@ -27,11 +35,11 @@ pub fn decode(input: &str) -> Result<String, String> {
                     if let Ok(value) = u8::from_str_radix(&hex_chars, 16) {
                         result.push(value as char);
                     } else {
-                        return Err("Invalid String".to_string());
+                        return Err(Error::InvalidHexChar);
                     }
                 }
                 // TODO: unicode escape sequences
-                _ => return Err("Invalid String".to_string()),
+                _ => return Err(Error::InvalidEscape),
             }
         } else {
             result.push(c);
@@ -44,7 +52,6 @@ pub fn decode(input: &str) -> Result<String, String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
 
     #[test]
     fn test_simple_escape() {
