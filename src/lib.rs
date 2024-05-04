@@ -1,22 +1,8 @@
-use std::error::Error;
-use std::fmt;
 use std::iter::Peekable;
 use std::u32;
 
-#[derive(Debug)]
-pub enum DecodeError {
-    InvalidEscape,
-    InvalidHexChar,
-    InvalidUnicode,
-}
-
-impl fmt::Display for DecodeError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl Error for DecodeError {}
+pub mod error;
+pub use error::DecodeError;
 
 pub fn decode(input: &str) -> Result<String, DecodeError> {
     let mut result = String::new();
