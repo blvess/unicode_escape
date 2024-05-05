@@ -4,6 +4,48 @@ use std::u32;
 pub mod error;
 pub use error::DecodeError;
 
+/// Decodes a string with escape sequences.
+///
+/// This function interprets and converts escape sequences in the input string into their corresponding characters.
+/// It handles simple escape sequences (e.g., '\t', '\n'), 8-bit escape sequences (e.g., '\x02'),
+/// and Unicode escape sequences (e.g., '\u{1A2B}').
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```rust
+/// let input = "Hello\\nWorld";
+/// let decoded = decode(input).unwrap();
+/// assert_eq!(decoded, "Hello\nWorld");
+/// ```
+///
+/// Handling 8-bit escape sequences:
+///
+/// ```rust
+/// let input = "This is a\\x02test";
+/// let decoded = decode(input).unwrap();
+/// assert_eq!(decoded, "This is a\u{2}test");
+/// ```
+///
+/// Handling Unicode escape sequences:
+///
+/// ```rust
+/// let input = "Unicode: \\u{1F600}";
+/// let decoded = decode(input).unwrap();
+/// assert_eq!(decoded, "Unicode: 😀");
+/// ```
+///
+/// # Errors
+///
+/// This function will return an error of type `DecodeError` if an invalid escape sequence is encountered.
+///
+/// ```rust
+/// let input = "Invalid escape: \\z";
+/// assert!(decode(input).is_err());
+/// ```
+///
+/// See the `DecodeError` enum for more details on possible error variants.
 pub fn decode(input: &str) -> Result<String, DecodeError> {
     let mut result = String::new();
     let mut chars = input.chars().peekable();
@@ -32,6 +74,40 @@ pub fn decode(input: &str) -> Result<String, DecodeError> {
     Ok(result)
 }
 
+/// Decodes a hexadecimal escape sequence.
+///
+/// This function takes an iterator of characters representing a hexadecimal escape sequence
+/// (e.g., `\x02`) and returns the corresponding character.
+///
+/// # Parameters
+///
+/// * `chars`: An iterator of characters representing the hexadecimal escape sequence.
+///
+/// # Returns
+///
+/// A `Result` containing the decoded character or an error if the escape sequence is invalid.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```rust
+/// let mut chars = "02".chars();
+/// let decoded = escape_hex(&mut chars).unwrap();
+/// assert_eq!(decoded, '\u{2}');
+/// ```
+///
+/// Handling invalid escape sequence:
+///
+/// ```rust
+/// let mut chars = "zz".chars();
+/// assert!(escape_hex(&mut chars).is_err());
+/// ```
+///
+/// # Errors
+///
+/// This function will return an error of type `DecodeError::InvalidHexChar` if the escape sequence
+/// is not a valid hexadecimal representation of a character.
 fn escape_hex(chars: &mut impl Iterator<Item = char>) -> Result<char, DecodeError> {
     let mut hex_chars = String::new();
     for _ in 0..2 {
@@ -47,12 +123,48 @@ fn escape_hex(chars: &mut impl Iterator<Item = char>) -> Result<char, DecodeErro
     }
 }
 
+/// Decodes a Unicode escape sequence.
+///
+/// This function takes an iterator of characters representing a Unicode escape sequence
+/// (e.g., `\u{1F600}`) and returns the corresponding character.
+///
+/// # Parameters
+///
+/// * `chars`: An iterator of characters representing the Unicode escape sequence.
+///
+/// # Returns
+///
+/// A `Result` containing the decoded character or an error if the escape sequence is invalid.
+///
+/// # Examples
+///
+/// Basic usage:
+///
+/// ```rust
+/// let mut chars = "{1F600}".chars().peekable();
+/// let decoded = decode_unicode(&mut chars).unwrap();
+/// assert_eq!(decoded, '😀');
+/// ```
+///
+/// Handling invalid escape sequence:
+///
+/// ```rust
+/// let mut chars = "{zz}".chars().peekable();
+/// assert!(decode_unicode(&mut chars).is_err());
+/// ```
+///
+/// # Errors
+///
+/// This function will return an error of type `DecodeError::InvalidUnicode` if the escape sequence
+/// is not a valid Unicode representation of a character or if the Unicode code point is out of range.
 fn decode_unicode(chars: &mut Peekable<impl Iterator<Item = char>>) -> Result<char, DecodeError> {
+    // Remove the leading '{'
     match chars.next() {
         Some('{') => {}
         _ => return Err(DecodeError::InvalidUnicode),
     };
 
+    // Gather all hex digits in a string
     let mut hex_chars = String::new();
     while let Some(&c) = chars.peek() {
         if c.is_ascii_hexdigit() {
@@ -63,11 +175,13 @@ fn decode_unicode(chars: &mut Peekable<impl Iterator<Item = char>>) -> Result<ch
         }
     }
 
+    // Remove the trailing '}'
     match chars.next() {
         Some('}') => {}
         _ => return Err(DecodeError::InvalidUnicode),
     };
 
+    // Convert the stirng to a char
     if let Ok(value) = u32::from_str_radix(&hex_chars, 16) {
         if let Some(c) = char::from_u32(value) {
             Ok(c)
