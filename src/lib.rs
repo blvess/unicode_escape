@@ -1,3 +1,10 @@
+//! # Escape Sequence Decoder
+//!
+//! This crate provides a module for decoding strings with escape sequences. It handles simple escape sequences (e.g., '\t', '\n'), 8-bit escape sequences (e.g., '\x02'), and Unicode escape sequences (e.g., '\u{1A2B}').
+//!
+//! The module exports a single function, `decode`, which takes a string as input and returns a `Result` containing the decoded string or an error of type `DecodeError`. The function handles invalid escape sequences gracefully, returning an error if an invalid sequence is encountered.
+//!
+//! The module also provides a set of unit tests to ensure the correctness of the decoding functionality.
 use std::iter::Peekable;
 use std::u32;
 
